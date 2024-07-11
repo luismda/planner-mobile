@@ -21,6 +21,7 @@ function Button({
   variant = 'primary',
   isLoading = false,
   children,
+  className,
   ...props
 }: ButtonProps) {
   const isDisabled = props.disabled || isLoading
@@ -28,13 +29,14 @@ function Button({
   return (
     <TouchableOpacity
       className={clsx(
-        'h-11 w-full flex-row items-center justify-center gap-2 rounded-lg',
+        'h-11 flex-row items-center justify-center gap-2 rounded-lg',
         {
           'bg-lime-300': variant === 'primary',
           'bg-zinc-800': variant === 'secondary',
           'bg-lime-300/60': variant === 'primary' && isDisabled,
           'bg-zinc-800/60': variant === 'secondary' && isDisabled,
         },
+        className,
       )}
       activeOpacity={0.9}
       disabled={isLoading}

@@ -1,4 +1,5 @@
 import '@/styles/global.css'
+import '@/lib/dayjs'
 
 import {
   Inter_400Regular,
