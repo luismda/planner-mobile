@@ -1,13 +1,15 @@
 import dayjs from 'dayjs'
 import { Calendar as CalendarIcon, Clock, Plus, Tag } from 'lucide-react-native'
-import { useState } from 'react'
-import { Alert, Keyboard, Text, View } from 'react-native'
+import { useCallback, useEffect, useState } from 'react'
+import { Alert, Keyboard, SectionList, Text, View } from 'react-native'
 
+import { Activity, type ActivityProps } from '@/components/activity'
 import { Button } from '@/components/button'
 import { Calendar } from '@/components/calendar'
 import { Input } from '@/components/input'
+import { Loading } from '@/components/loading'
 import { Modal } from '@/components/modal'
-import { createActivity } from '@/server/activities'
+import { createActivity, getActivitiesByTripId } from '@/server/activities'
 import { colors } from '@/styles/colors'
 
 import type { TripDetails } from './[id]'
@@ -16,6 +18,14 @@ enum VisibleModalEnum {
   NONE,
   CALENDAR,
   NEW_ACTIVITY,
+}
+
+interface TripActivity {
+  title: {
+    dayNumber: number
+    dayName: string
+  }
+  data: ActivityProps[]
 }
 
 interface ActivitiesProps {
@@ -30,6 +40,34 @@ export function Activities({ tripDetails }: ActivitiesProps) {
   const [activityHour, setActivityHour] = useState('')
 
   const [isCreatingActivity, setIsCreatingActivity] = useState(false)
+  const [isLoadingActivities, setIsLoadingActivities] = useState(true)
+
+  const [tripActivities, setTripActivities] = useState<TripActivity[]>([])
+
+  const fetchTripActivities = useCallback(async () => {
+    try {
+      const { activities } = await getActivitiesByTripId(tripDetails.id)
+
+      const activitiesToSectionList = activities.map((dayActivity) => ({
+        title: {
+          dayNumber: dayjs(dayActivity.date).date(),
+          dayName: dayjs(dayActivity.date).format('dddd').replace('-feira', ''),
+        },
+        data: dayActivity.activities.map((activity) => ({
+          id: activity.id,
+          title: activity.title,
+          hour: dayjs(activity.occurs_at).format('hh[:]mm[h]'),
+          isBefore: dayjs(activity.occurs_at).isBefore(dayjs()),
+        })),
+      }))
+
+      setTripActivities(activitiesToSectionList)
+    } catch (error) {
+      console.warn(error)
+    } finally {
+      setIsLoadingActivities(false)
+    }
+  }, [tripDetails])
 
   function resetActivityFields() {
     setActivityTitle('')
@@ -56,6 +94,8 @@ export function Activities({ tripDetails }: ActivitiesProps) {
           .toString(),
       })
 
+      await fetchTripActivities()
+
       resetActivityFields()
     } catch (error) {
       console.warn(error)
@@ -69,6 +109,9 @@ export function Activities({ tripDetails }: ActivitiesProps) {
     }
   }
 
+  useEffect(() => {
+    fetchTripActivities()
+  }, [fetchTripActivities])
   return (
     <View className="flex-1">
       <View className="mb-6 mt-5 w-full flex-row items-center">
@@ -81,6 +124,34 @@ export function Activities({ tripDetails }: ActivitiesProps) {
           <Plus color={colors.lime[950]} size={20} />
         </Button>
       </View>
+
+      {isLoadingActivities ? (
+        <Loading />
+      ) : (
+        <SectionList
+          sections={tripActivities}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => <Activity data={item} />}
+          renderSectionHeader={({ section }) => (
+            <View className="w-full">
+              <Text className="py-2 font-semibold text-2xl text-zinc-50">
+                Dia {section.title.dayNumber}{' '}
+                <Text className="font-regular text-base capitalize text-zinc-500">
+                  {section.title.dayName}
+                </Text>
+              </Text>
+
+              {section.data.length === 0 && (
+                <Text className="mb-8 font-regular text-sm text-zinc-500">
+                  Nenhuma atividade cadastrada nessa data.
+                </Text>
+              )}
+            </View>
+          )}
+          contentContainerClassName="gap-3 pb-48"
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       <Modal
         title="Cadastrar atividade"
