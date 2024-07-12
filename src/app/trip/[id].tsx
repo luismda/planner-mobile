@@ -24,7 +24,7 @@ import { calendarUtils, DatesSelected } from '@/utils/calendar-utils'
 import { Activities } from './activities'
 import { Details } from './details'
 
-type TripDetails = GetTripDetailsResponse & { when: string }
+export type TripDetails = GetTripDetailsResponse & { when: string }
 type MenuOption = 'activity' | 'details'
 
 enum VisibleModalEnum {
@@ -159,7 +159,11 @@ export default function Trip() {
         </TouchableOpacity>
       </Input>
 
-      {menuOption === 'activity' ? <Activities /> : <Details />}
+      {menuOption === 'activity' ? (
+        <Activities tripDetails={tripDetails} />
+      ) : (
+        <Details />
+      )}
 
       <View className="absolute -bottom-1 z-10 w-full justify-end self-center bg-zinc-950 pb-5">
         <View className="w-full flex-row gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-4">

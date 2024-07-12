@@ -15,16 +15,18 @@ interface InputProps extends ViewProps {
   variant?: Variant
 }
 
-function Input({ variant = 'primary', ...props }: InputProps) {
+function Input({ variant = 'primary', className, ...props }: InputProps) {
   return (
     <View
       className={clsx(
-        'h-11 w-full flex-row items-center gap-2',
+        'max-h-11 min-h-11 flex-row items-center gap-2',
         {
-          'h-14 rounded-lg border border-zinc-800 px-4': variant !== 'primary',
+          'max-h-14 min-h-14 rounded-lg border border-zinc-800 px-4':
+            variant !== 'primary',
+          'bg-zinc-950': variant === 'secondary',
+          'bg-zinc-900': variant === 'tertiary',
         },
-        { 'bg-zinc-950': variant === 'secondary' },
-        { 'bg-zinc-900': variant === 'tertiary' },
+        className,
       )}
       {...props}
     />
