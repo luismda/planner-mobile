@@ -83,12 +83,16 @@ export default function Trip() {
       })
 
       setDestination(trip.destination)
+
+      if (tripParams.participant) {
+        setVisibleModal(VisibleModalEnum.CONFIRM_ATTENDANCE)
+      }
     } catch (error) {
       console.warn(error)
     } finally {
       setIsLoadingTrip(false)
     }
-  }, [tripParams.id])
+  }, [tripParams.id, tripParams.participant])
 
   function handleSelectDate(selectedDay: DateData) {
     const dates = calendarUtils.orderStartsAtAndEndsAt({
