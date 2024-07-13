@@ -112,6 +112,7 @@ export function Activities({ tripDetails }: ActivitiesProps) {
   useEffect(() => {
     fetchTripActivities()
   }, [fetchTripActivities])
+
   return (
     <View className="flex-1">
       <View className="mb-6 mt-5 w-full flex-row items-center">

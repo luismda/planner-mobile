@@ -4,11 +4,13 @@ import {
   Calendar as CalendarIcon,
   CalendarRange,
   Info,
+  Mail,
   MapPin,
   Settings2,
+  User,
 } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, Keyboard, TouchableOpacity, View } from 'react-native'
+import { Alert, Keyboard, Text, TouchableOpacity, View } from 'react-native'
 import { DateData } from 'react-native-calendars'
 
 import { Button } from '@/components/button'
@@ -16,10 +18,13 @@ import { Calendar } from '@/components/calendar'
 import { Input } from '@/components/input'
 import { Loading } from '@/components/loading'
 import { Modal } from '@/components/modal'
+import { confirmTripByParticipantId } from '@/server/participants'
 import { getTripDetails, GetTripDetailsResponse } from '@/server/trips'
 import { updateTrip } from '@/server/trips/update-trip'
+import { saveTripStorage } from '@/storage/trips'
 import { colors } from '@/styles/colors'
 import { calendarUtils, DatesSelected } from '@/utils/calendar-utils'
+import { validateInput } from '@/utils/validate-input'
 
 import { Activities } from './activities'
 import { Details } from './details'
@@ -31,13 +36,18 @@ enum VisibleModalEnum {
   NONE,
   UPDATE_TRIP,
   CALENDAR,
+  CONFIRM_ATTENDANCE,
 }
 
 export default function Trip() {
-  const { id: tripId } = useLocalSearchParams<{ id: string }>()
+  const tripParams = useLocalSearchParams<{
+    id: string
+    participant?: string
+  }>()
 
   const [isLoadingTrip, setIsLoadingTrip] = useState(true)
   const [isUpdatingTrip, setIsUpdatingTrip] = useState(false)
+  const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false)
 
   const [tripDetails, setTripDetails] = useState({} as TripDetails)
 
@@ -46,17 +56,17 @@ export default function Trip() {
 
   const [destination, setDestination] = useState('')
   const [selectedDates, setSelectedDates] = useState({} as DatesSelected)
+  const [guestName, setGuestName] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
 
   const fetchTrip = useCallback(async () => {
-    setIsLoadingTrip(true)
-
-    if (!tripId) {
+    if (!tripParams.id) {
       router.back()
       return
     }
 
     try {
-      const { trip } = await getTripDetails(tripId)
+      const { trip } = await getTripDetails(tripParams.id)
 
       const destination =
         trip.destination.length > 14
@@ -78,7 +88,7 @@ export default function Trip() {
     } finally {
       setIsLoadingTrip(false)
     }
-  }, [tripId])
+  }, [tripParams.id])
 
   function handleSelectDate(selectedDay: DateData) {
     const dates = calendarUtils.orderStartsAtAndEndsAt({
@@ -91,7 +101,7 @@ export default function Trip() {
   }
 
   async function handleUpdateTrip() {
-    if (!tripId) return
+    if (!tripParams.id) return
 
     if (
       destination.trim().length === 0 ||
@@ -115,15 +125,15 @@ export default function Trip() {
 
     try {
       await updateTrip({
-        id: tripId,
+        id: tripParams.id,
         destination,
         ends_at: dayjs(selectedDates.endsAt?.dateString).toString(),
         starts_at: dayjs(selectedDates.startsAt?.dateString).toString(),
       })
 
-      setVisibleModal(VisibleModalEnum.NONE)
-
       await fetchTrip()
+
+      setVisibleModal(VisibleModalEnum.NONE)
     } catch (error) {
       console.warn(error)
 
@@ -133,6 +143,47 @@ export default function Trip() {
       )
     } finally {
       setIsUpdatingTrip(false)
+    }
+  }
+
+  async function handleConfirmAttendance() {
+    if (!tripParams.id || !tripParams.participant) return
+
+    if (!guestName.trim() || !guestEmail.trim()) {
+      return Alert.alert(
+        'Confirmar presença',
+        'Informe seu nome e e-mail corretamente para confirmar a viajem.',
+      )
+    }
+
+    if (!validateInput.email(guestEmail)) {
+      return Alert.alert(
+        'Confirmar presença',
+        'Informe um e-mail válido para confirmar a viajem.',
+      )
+    }
+
+    setIsConfirmingAttendance(true)
+
+    try {
+      await confirmTripByParticipantId({
+        participant_id: tripParams.participant,
+        name: guestName.trim(),
+        email: guestEmail.trim(),
+      })
+
+      await saveTripStorage(tripParams.id)
+
+      setVisibleModal(VisibleModalEnum.NONE)
+    } catch (error) {
+      console.warn(error)
+
+      Alert.alert(
+        'Confirmar presença',
+        'Ocorreu uma falha ao confirmar sua presença.',
+      )
+    } finally {
+      setIsConfirmingAttendance(false)
     }
   }
 
@@ -162,7 +213,7 @@ export default function Trip() {
       {menuOption === 'activity' ? (
         <Activities tripDetails={tripDetails} />
       ) : (
-        <Details />
+        <Details tripId={tripDetails.id} />
       )}
 
       <View className="absolute -bottom-1 z-10 w-full justify-end self-center bg-zinc-950 pb-5">
@@ -253,6 +304,55 @@ export default function Trip() {
             <Button.Title>Confirmar</Button.Title>
           </Button>
         </View>
+      </Modal>
+
+      <Modal
+        title="Confirmar presença"
+        visible={visibleModal === VisibleModalEnum.CONFIRM_ATTENDANCE}
+      >
+        <Text className="mt-2 font-regular leading-6 text-zinc-400">
+          Você foi convidado(a) para participar de uma viajem para{' '}
+          <Text className="font-semibold text-zinc-100">
+            {tripDetails.destination}
+          </Text>{' '}
+          nas datas de{' '}
+          <Text className="font-semibold text-zinc-100">
+            {dayjs(tripDetails.starts_at).date()} a{' '}
+            {dayjs(tripDetails.ends_at).date()} de{' '}
+            {dayjs(tripDetails.ends_at).format('MMMM')}
+          </Text>
+          .{'\n\n'}
+          Para confirmar sua presença na viajem, preencha os dados abaixo:
+        </Text>
+
+        <View className="mb-3 mt-5 gap-2">
+          <Input variant="secondary">
+            <User color={colors.zinc[400]} size={20} />
+
+            <Input.Field
+              value={guestName}
+              placeholder="Seu nome completo"
+              onChangeText={setGuestName}
+            />
+          </Input>
+
+          <Input variant="secondary">
+            <Mail color={colors.zinc[400]} size={20} />
+
+            <Input.Field
+              value={guestEmail}
+              placeholder="E-mail de confirmação"
+              onChangeText={setGuestEmail}
+            />
+          </Input>
+        </View>
+
+        <Button
+          isLoading={isConfirmingAttendance}
+          onPress={handleConfirmAttendance}
+        >
+          <Button.Title>Confirmar</Button.Title>
+        </Button>
       </Modal>
     </View>
   )
