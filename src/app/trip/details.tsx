@@ -1,6 +1,7 @@
 import { Link2, Plus, Tag } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, FlatList, Text, View } from 'react-native'
+import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 
 import { Button } from '@/components/button'
 import { Input } from '@/components/input'
@@ -97,7 +98,11 @@ export function Details({ tripId }: DetailsProps) {
   }, [fetchTripParticipants])
 
   return (
-    <View className="flex-1 pt-5">
+    <Animated.View
+      entering={SlideInRight.duration(400)}
+      exiting={SlideOutRight.duration(400)}
+      className="flex-1 pt-5"
+    >
       <Text className="mb-2 font-semibold text-2xl text-zinc-50">
         Links importantes
       </Text>
@@ -172,6 +177,6 @@ export function Details({ tripId }: DetailsProps) {
           <Button.Title>Salvar link</Button.Title>
         </Button>
       </Modal>
-    </View>
+    </Animated.View>
   )
 }

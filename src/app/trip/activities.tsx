@@ -2,6 +2,7 @@ import dayjs from 'dayjs'
 import { Calendar as CalendarIcon, Clock, Plus, Tag } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
 import { Alert, Keyboard, SectionList, Text, View } from 'react-native'
+import Animated, { SlideInLeft, SlideOutLeft } from 'react-native-reanimated'
 
 import { Activity, type ActivityProps } from '@/components/activity'
 import { Button } from '@/components/button'
@@ -114,7 +115,11 @@ export function Activities({ tripDetails }: ActivitiesProps) {
   }, [fetchTripActivities])
 
   return (
-    <View className="flex-1">
+    <Animated.View
+      entering={SlideInLeft.duration(400)}
+      exiting={SlideOutLeft.duration(400)}
+      className="flex-1"
+    >
       <View className="mb-6 mt-5 w-full flex-row items-center">
         <Text className="flex-1 font-semibold text-2xl text-zinc-50">
           Atividades
@@ -233,6 +238,6 @@ export function Activities({ tripDetails }: ActivitiesProps) {
           </Button>
         </View>
       </Modal>
-    </View>
+    </Animated.View>
   )
 }

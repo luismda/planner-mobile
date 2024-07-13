@@ -11,6 +11,12 @@ import {
 import { useEffect, useState } from 'react'
 import { Alert, Image, Keyboard, Text, View } from 'react-native'
 import { DateData } from 'react-native-calendars'
+import Animated, {
+  CurvedTransition,
+  Easing,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated'
 
 import { Button } from '@/components/button'
 import { Calendar } from '@/components/calendar'
@@ -186,20 +192,25 @@ export default function Index() {
 
   return (
     <View className="flex-1 items-center justify-center px-5">
-      <Image
-        source={require('@/assets/logo.png')}
-        alt="Planner"
-        className="h-8"
-        resizeMode="contain"
-      />
-
       <Image source={require('@/assets/bg.png')} alt="" className="absolute" />
 
-      <Text className="mt-3 text-center font-regular text-lg text-zinc-400">
-        Convide seus amigos e planeje sua{'\n'}próxima viajem
-      </Text>
+      <Animated.View layout={CurvedTransition}>
+        <Image
+          source={require('@/assets/logo.png')}
+          alt="Planner"
+          className="h-8"
+          resizeMode="contain"
+        />
 
-      <View className="my-8 w-full gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+        <Text className="mt-3 text-center font-regular text-lg text-zinc-400">
+          Convide seus amigos e planeje sua{'\n'}próxima viajem
+        </Text>
+      </Animated.View>
+
+      <Animated.View
+        layout={CurvedTransition.easingHeight(Easing.linear)}
+        className="my-8 w-full gap-3 rounded-xl border border-zinc-800 bg-zinc-900 p-4"
+      >
         <View className="gap-2">
           <Input>
             <MapPin color={colors.zinc[400]} size={20} />
@@ -226,18 +237,12 @@ export default function Index() {
           </Input>
         </View>
 
-        {formStep === FormStepEnum.TRIP_DETAILS && (
-          <Button
-            disabled={isTripDetailsButtonDisabled}
-            onPress={handleNextFormStep}
-          >
-            <Button.Title>Continuar</Button.Title>
-            <ArrowRight color={colors.lime[950]} size={20} />
-          </Button>
-        )}
-
         {formStep === FormStepEnum.ADD_EMAILS && (
-          <>
+          <Animated.View
+            className="gap-2"
+            entering={FadeIn.delay(100)}
+            exiting={FadeOut.duration(100)}
+          >
             <Button variant="secondary" onPress={handlePrevFormStep}>
               <Button.Title>Alterar local/data</Button.Title>
               <Settings2 color={colors.zinc[200]} size={20} />
@@ -263,7 +268,21 @@ export default function Index() {
                 }}
               />
             </Input>
+          </Animated.View>
+        )}
 
+        <Animated.View layout={CurvedTransition.duration(400)}>
+          {formStep === FormStepEnum.TRIP_DETAILS && (
+            <Button
+              disabled={isTripDetailsButtonDisabled}
+              onPress={handleNextFormStep}
+            >
+              <Button.Title>Continuar</Button.Title>
+              <ArrowRight color={colors.lime[950]} size={20} />
+            </Button>
+          )}
+
+          {formStep === FormStepEnum.ADD_EMAILS && (
             <Button
               isLoading={isCreatingTrip}
               disabled={emailsToInvite.length === 0}
@@ -272,22 +291,24 @@ export default function Index() {
               <Button.Title>Confirmar viajem</Button.Title>
               <ArrowRight color={colors.lime[950]} size={20} />
             </Button>
-          </>
-        )}
-      </View>
+          )}
+        </Animated.View>
+      </Animated.View>
 
-      <Text className="text-center font-regular text-sm text-zinc-500">
-        Ao planejar sua viagem pela plann.er você{'\n'}automaticamente concorda
-        com nossos{' '}
-        <Text className="text-zinc-300 underline underline-offset-1">
-          termos de uso
+      <Animated.View layout={CurvedTransition}>
+        <Text className="text-center font-regular text-sm text-zinc-500">
+          Ao planejar sua viagem pela plann.er você{'\n'}automaticamente
+          concorda com nossos{' '}
+          <Text className="text-zinc-300 underline underline-offset-1">
+            termos de uso
+          </Text>
+          {'\n'}e{' '}
+          <Text className="text-zinc-300 underline underline-offset-1">
+            políticas de privacidade
+          </Text>
+          .
         </Text>
-        {'\n'}e{' '}
-        <Text className="text-zinc-300 underline underline-offset-1">
-          políticas de privacidade
-        </Text>
-        .
-      </Text>
+      </Animated.View>
 
       <Modal
         title="Selecionar datas"

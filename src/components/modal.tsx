@@ -1,11 +1,14 @@
 import { BlurView } from 'expo-blur'
 import { X } from 'lucide-react-native'
+import { AnimatePresence, MotiView } from 'moti'
+import { useCallback, useEffect, useState } from 'react'
 import {
   Modal as RNModal,
   ModalProps,
   ScrollView,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native'
 
@@ -20,42 +23,128 @@ type Props = ModalProps & {
 export function Modal({
   title,
   subtitle = '',
+  visible,
   onClose,
   children,
   ...rest
 }: Props) {
+  const dimensions = useWindowDimensions()
+
+  const [isVisible, setIsVisible] = useState(false)
+  const [isContentVisible, setIsContentVisible] = useState(false)
+
+  const toggleVisibility = useCallback(async () => {
+    if (visible) {
+      setIsVisible(true)
+      setIsContentVisible(true)
+
+      return
+    }
+
+    setIsContentVisible(false)
+
+    await new Promise((resolve) => setTimeout(resolve, 800))
+
+    setIsVisible(false)
+  }, [visible])
+
+  useEffect(() => {
+    toggleVisibility()
+  }, [toggleVisibility])
+
   return (
-    <RNModal transparent animationType="slide" {...rest}>
-      <BlurView
-        className="flex-1"
-        intensity={7}
-        tint="dark"
-        experimentalBlurMethod="dimezisBlurView"
-      >
-        <View className="flex-1 justify-end bg-black/60">
-          <View className="border-t border-zinc-700 bg-zinc-900 px-6 pb-10 pt-5">
-            <ScrollView showsVerticalScrollIndicator={false}>
-              <View className="flex-row items-center justify-between pt-5">
-                <Text className="font-medium text-xl text-white">{title}</Text>
+    <RNModal transparent animationType="none" visible={isVisible} {...rest}>
+      <AnimatePresence>
+        {isContentVisible && (
+          <MotiView
+            className="flex-1"
+            from={{
+              opacity: 0,
+            }}
+            animate={{
+              opacity: 1,
+            }}
+            exit={{
+              opacity: 0,
+            }}
+            exitTransition={{
+              delay: 150,
+            }}
+          >
+            <BlurView
+              tint="dark"
+              intensity={7}
+              className="flex-1"
+              experimentalBlurMethod="dimezisBlurView"
+            >
+              <MotiView
+                className="flex-1"
+                from={{
+                  opacity: 0,
+                }}
+                animate={{
+                  opacity: 1,
+                }}
+                exit={{
+                  opacity: 0,
+                }}
+                exitTransition={{
+                  delay: 150,
+                }}
+              >
+                <View className="flex-1 justify-end bg-black/60">
+                  <MotiView
+                    from={{
+                      translateY: dimensions.height,
+                    }}
+                    animate={{
+                      translateY: 0,
+                    }}
+                    transition={{
+                      type: 'timing',
+                      duration: 500,
+                    }}
+                    exit={{
+                      translateY: dimensions.height,
+                    }}
+                    exitTransition={{
+                      type: 'timing',
+                      duration: 500,
+                    }}
+                  >
+                    <View className="border-t border-zinc-700 bg-zinc-900 px-6 pb-10 pt-5">
+                      <ScrollView showsVerticalScrollIndicator={false}>
+                        <View className="flex-row items-center justify-between pt-5">
+                          <Text className="font-medium text-xl text-white">
+                            {title}
+                          </Text>
 
-                {onClose && (
-                  <TouchableOpacity activeOpacity={0.7} onPress={onClose}>
-                    <X color={colors.zinc[400]} size={20} />
-                  </TouchableOpacity>
-                )}
-              </View>
+                          {onClose && (
+                            <TouchableOpacity
+                              activeOpacity={0.7}
+                              onPress={onClose}
+                            >
+                              <X color={colors.zinc[400]} size={20} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
 
-              {subtitle.trim().length > 0 && (
-                <Text className="my-2 font-regular leading-6 text-zinc-400">
-                  {subtitle}
-                </Text>
-              )}
+                        {subtitle.trim().length > 0 && (
+                          <Text className="my-2 font-regular leading-6 text-zinc-400">
+                            {subtitle}
+                          </Text>
+                        )}
 
-              {children}
-            </ScrollView>
-          </View>
-        </View>
-      </BlurView>
+                        {children}
+                      </ScrollView>
+                    </View>
+                  </MotiView>
+                </View>
+              </MotiView>
+            </BlurView>
+          </MotiView>
+        )}
+      </AnimatePresence>
     </RNModal>
   )
 }
