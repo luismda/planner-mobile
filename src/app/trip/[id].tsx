@@ -21,7 +21,7 @@ import { Modal } from '@/components/modal'
 import { confirmTripByParticipantId } from '@/server/participants'
 import { getTripDetails, GetTripDetailsResponse } from '@/server/trips'
 import { updateTrip } from '@/server/trips/update-trip'
-import { saveTripStorage } from '@/storage/trips'
+import { removeTripStorage, saveTripStorage } from '@/storage/trips'
 import { colors } from '@/styles/colors'
 import { calendarUtils, DatesSelected } from '@/utils/calendar-utils'
 import { validateInput } from '@/utils/validate-input'
@@ -191,6 +191,23 @@ export default function Trip() {
     }
   }
 
+  async function handleRemoveTrip() {
+    Alert.alert(
+      'Remover viajem',
+      'Ao confirmar, a viajem será removida do seu dispositivo.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          onPress: async () => {
+            await removeTripStorage()
+            router.replace('/')
+          },
+        },
+      ],
+    )
+  }
+
   useEffect(() => {
     fetchTrip()
   }, [fetchTrip])
@@ -287,6 +304,10 @@ export default function Trip() {
 
           <Button isLoading={isUpdatingTrip} onPress={handleUpdateTrip}>
             <Button.Title>Atualizar</Button.Title>
+          </Button>
+
+          <Button variant="secondary" onPress={handleRemoveTrip}>
+            <Button.Title>Remover</Button.Title>
           </Button>
         </View>
       </Modal>
