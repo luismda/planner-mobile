@@ -20,7 +20,7 @@ export function TripLink({ data }: Props) {
   }
 
   return (
-    <View className="w-full flex-row items-center gap-10">
+    <View className="w-full flex-row items-center gap-32">
       <View className="flex-1 gap-1.5">
         <Text className="font-medium text-base text-zinc-100">
           {data.title}

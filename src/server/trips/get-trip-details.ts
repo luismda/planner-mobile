@@ -1,6 +1,6 @@
 import { api } from '../api'
 
-export interface GetTripDetailsResponse {
+export interface TripData {
   id: string
   destination: string
   starts_at: string
@@ -8,10 +8,12 @@ export interface GetTripDetailsResponse {
   is_confirmed: boolean
 }
 
+export interface GetTripDetailsResponse {
+  trip: TripData
+}
+
 export async function getTripDetails(tripId: string) {
-  const { data } = await api.get<{ trip: GetTripDetailsResponse }>(
-    `/trips/${tripId}`,
-  )
+  const { data } = await api.get<GetTripDetailsResponse>(`/trips/${tripId}`)
 
   return data
 }

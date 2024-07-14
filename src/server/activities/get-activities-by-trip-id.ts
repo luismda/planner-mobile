@@ -1,20 +1,24 @@
 import { api } from '../api'
 
-export interface Activity {
+export interface ActivityData {
   id: string
   occurs_at: string
   title: string
 }
 
-export interface GetActivitiesByTripIdResponse {
+export interface DayActivities {
   date: string
-  activities: Activity[]
+  activities: ActivityData[]
+}
+
+export interface GetActivitiesByTripIdResponse {
+  activities: DayActivities[]
 }
 
 export async function getActivitiesByTripId(tripId: string) {
-  const { data } = await api.get<{
-    activities: GetActivitiesByTripIdResponse[]
-  }>(`/trips/${tripId}/activities`)
+  const { data } = await api.get<GetActivitiesByTripIdResponse>(
+    `/trips/${tripId}/activities`,
+  )
 
   return data
 }

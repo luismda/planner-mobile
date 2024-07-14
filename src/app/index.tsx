@@ -24,8 +24,8 @@ import { GuestEmail } from '@/components/email'
 import { Input } from '@/components/input'
 import { Loading } from '@/components/loading'
 import { Modal } from '@/components/modal'
-import { createTrip, getTripDetails } from '@/server/trips'
-import { getTripStorage, saveTripStorage } from '@/storage/trips'
+import { getTripDetails, useCreateTrip } from '@/server/trips'
+import { getTripStorage } from '@/storage/trips'
 import { colors } from '@/styles/colors'
 import { calendarUtils, DatesSelected } from '@/utils/calendar-utils'
 import { validateInput } from '@/utils/validate-input'
@@ -51,7 +51,8 @@ export default function Index() {
   const [emailsToInvite, setEmailsToInvite] = useState<string[]>([])
 
   const [isGettingTrip, setIsGettingTrip] = useState(true)
-  const [isCreatingTrip, setIsCreatingTrip] = useState(false)
+
+  const { mutate: createTrip, isPending: isCreatingTrip } = useCreateTrip()
 
   function handleNextFormStep() {
     if (
@@ -127,33 +128,29 @@ export default function Index() {
     setEmailToInvite('')
   }
 
-  async function handleCreateTrip() {
-    setIsCreatingTrip(true)
-
-    try {
-      const { tripId } = await createTrip({
+  function handleCreateTrip() {
+    createTrip(
+      {
         destination,
         emails_to_invite: emailsToInvite,
         ends_at: dayjs(selectedDates.endsAt?.dateString).toString(),
         starts_at: dayjs(selectedDates.startsAt?.dateString).toString(),
-      })
-
-      await saveTripStorage(tripId)
-
-      router.navigate(`/trip/${tripId}`)
-    } catch (error) {
-      setIsCreatingTrip(false)
-
-      console.warn(error)
-
-      Alert.alert(
-        'Confirmar viajem',
-        'Ocorreu uma falha ao confirmar a viajem.',
-      )
-    }
+      },
+      {
+        onSuccess: ({ tripId }) => {
+          router.navigate(`/trip/${tripId}`)
+        },
+        onError: () => {
+          Alert.alert(
+            'Confirmar viajem',
+            'Ocorreu uma falha ao confirmar a viajem.',
+          )
+        },
+      },
+    )
   }
 
-  async function fetchTrip() {
+  async function fetchTripStorage() {
     try {
       const tripId = await getTripStorage()
 
@@ -183,7 +180,7 @@ export default function Index() {
     !selectedDates.endsAt
 
   useEffect(() => {
-    fetchTrip()
+    fetchTripStorage()
   }, [])
 
   if (isGettingTrip) {

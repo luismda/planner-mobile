@@ -7,11 +7,14 @@ import {
   Inter_600SemiBold,
   useFonts,
 } from '@expo-google-fonts/inter'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { Slot } from 'expo-router'
 import * as Splash from 'expo-splash-screen'
 import { useCallback, useEffect } from 'react'
 import { StatusBar, View } from 'react-native'
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+
+import { queryClient } from '@/lib/react-query'
 
 Splash.preventAutoHideAsync()
 
@@ -38,17 +41,19 @@ export default function Layout() {
 
   return (
     <SafeAreaProvider>
-      <View className="flex-1 bg-zinc-950">
-        <SafeAreaView style={{ flex: 1 }}>
-          <StatusBar
-            barStyle="light-content"
-            backgroundColor="transparent"
-            translucent
-          />
+      <QueryClientProvider client={queryClient}>
+        <View className="flex-1 bg-zinc-950">
+          <SafeAreaView style={{ flex: 1 }}>
+            <StatusBar
+              barStyle="light-content"
+              backgroundColor="transparent"
+              translucent
+            />
 
-          <Slot />
-        </SafeAreaView>
-      </View>
+            <Slot />
+          </SafeAreaView>
+        </View>
+      </QueryClientProvider>
     </SafeAreaProvider>
   )
 }

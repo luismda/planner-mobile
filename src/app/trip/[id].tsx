@@ -9,7 +9,7 @@ import {
   Settings2,
   User,
 } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Alert, Keyboard, Text, TouchableOpacity, View } from 'react-native'
 import { DateData } from 'react-native-calendars'
 
@@ -18,9 +18,8 @@ import { Calendar } from '@/components/calendar'
 import { Input } from '@/components/input'
 import { Loading } from '@/components/loading'
 import { Modal } from '@/components/modal'
-import { confirmTripByParticipantId } from '@/server/participants'
-import { getTripDetails, GetTripDetailsResponse } from '@/server/trips'
-import { updateTrip } from '@/server/trips/update-trip'
+import { useConfirmTrip } from '@/server/participants'
+import { useTripDetails, useUpdateTrip } from '@/server/trips'
 import { removeTripStorage, saveTripStorage } from '@/storage/trips'
 import { colors } from '@/styles/colors'
 import { calendarUtils, DatesSelected } from '@/utils/calendar-utils'
@@ -29,14 +28,13 @@ import { validateInput } from '@/utils/validate-input'
 import { Activities } from './activities'
 import { Details } from './details'
 
-export type TripDetails = GetTripDetailsResponse & { when: string }
 type MenuOption = 'activity' | 'details'
 
 enum VisibleModalEnum {
   NONE,
   UPDATE_TRIP,
   CALENDAR,
-  CONFIRM_ATTENDANCE,
+  CONFIRM_TRIP,
 }
 
 export default function Trip() {
@@ -44,12 +42,6 @@ export default function Trip() {
     id: string
     participant?: string
   }>()
-
-  const [isLoadingTrip, setIsLoadingTrip] = useState(true)
-  const [isUpdatingTrip, setIsUpdatingTrip] = useState(false)
-  const [isConfirmingAttendance, setIsConfirmingAttendance] = useState(false)
-
-  const [tripDetails, setTripDetails] = useState({} as TripDetails)
 
   const [menuOption, setMenuOption] = useState<MenuOption>('activity')
   const [visibleModal, setVisibleModal] = useState(VisibleModalEnum.NONE)
@@ -59,35 +51,16 @@ export default function Trip() {
   const [guestName, setGuestName] = useState('')
   const [guestEmail, setGuestEmail] = useState('')
 
-  const fetchTrip = useCallback(async () => {
-    if (!tripParams.id) {
-      router.back()
-      return
-    }
+  const { data: tripDetails } = useTripDetails(tripParams.id ?? '')
+  const { mutate: updateTrip, isPending: isUpdatingTrip } = useUpdateTrip()
+  const { mutate: confirmTrip, isPending: isConfirmingTrip } = useConfirmTrip()
 
-    try {
-      const { trip } = await getTripDetails(tripParams.id)
+  function handleOpenUpdateTripModal() {
+    const { trip } = tripDetails ?? {}
 
-      const endDay = dayjs(trip.ends_at).format('DD')
-      const startDay = dayjs(trip.starts_at).format('DD')
-      const startMonth = dayjs(trip.starts_at).format('MMM')
-
-      setTripDetails({
-        ...trip,
-        when: `${startDay} a ${endDay} de ${startMonth}.`,
-      })
-
-      setDestination(trip.destination)
-
-      if (tripParams.participant) {
-        setVisibleModal(VisibleModalEnum.CONFIRM_ATTENDANCE)
-      }
-    } catch (error) {
-      console.warn(error)
-    } finally {
-      setIsLoadingTrip(false)
-    }
-  }, [tripParams.id, tripParams.participant])
+    setDestination(trip?.destination ?? '')
+    setVisibleModal(VisibleModalEnum.UPDATE_TRIP)
+  }
 
   function handleSelectDate(selectedDay: DateData) {
     const dates = calendarUtils.orderStartsAtAndEndsAt({
@@ -99,7 +72,7 @@ export default function Trip() {
     setSelectedDates(dates)
   }
 
-  async function handleUpdateTrip() {
+  function handleUpdateTrip() {
     if (!tripParams.id) return
 
     if (
@@ -120,33 +93,31 @@ export default function Trip() {
       )
     }
 
-    setIsUpdatingTrip(true)
-
-    try {
-      await updateTrip({
+    updateTrip(
+      {
         id: tripParams.id,
         destination,
         ends_at: dayjs(selectedDates.endsAt?.dateString).toString(),
         starts_at: dayjs(selectedDates.startsAt?.dateString).toString(),
-      })
-
-      await fetchTrip()
-
-      setVisibleModal(VisibleModalEnum.NONE)
-    } catch (error) {
-      console.warn(error)
-
-      Alert.alert(
-        'Atualizar viajem',
-        'Ocorreu uma falha ao atualizar a viajem.',
-      )
-    } finally {
-      setIsUpdatingTrip(false)
-    }
+      },
+      {
+        onSuccess: () => {
+          setVisibleModal(VisibleModalEnum.NONE)
+        },
+        onError: () => {
+          Alert.alert(
+            'Atualizar viajem',
+            'Ocorreu uma falha ao atualizar a viajem.',
+          )
+        },
+      },
+    )
   }
 
-  async function handleConfirmAttendance() {
-    if (!tripParams.id || !tripParams.participant) return
+  function handleConfirmTrip() {
+    const { id, participant } = tripParams
+
+    if (!id || !participant) return
 
     if (!guestName.trim() || !guestEmail.trim()) {
       return Alert.alert(
@@ -162,28 +133,25 @@ export default function Trip() {
       )
     }
 
-    setIsConfirmingAttendance(true)
-
-    try {
-      await confirmTripByParticipantId({
-        participant_id: tripParams.participant,
+    confirmTrip(
+      {
+        participant_id: participant,
         name: guestName.trim(),
         email: guestEmail.trim(),
-      })
-
-      await saveTripStorage(tripParams.id)
-
-      setVisibleModal(VisibleModalEnum.NONE)
-    } catch (error) {
-      console.warn(error)
-
-      Alert.alert(
-        'Confirmar presença',
-        'Ocorreu uma falha ao confirmar sua presença.',
-      )
-    } finally {
-      setIsConfirmingAttendance(false)
-    }
+      },
+      {
+        onSuccess: async () => {
+          await saveTripStorage(id)
+          setVisibleModal(VisibleModalEnum.NONE)
+        },
+        onError: () => {
+          Alert.alert(
+            'Confirmar presença',
+            'Ocorreu uma falha ao confirmar sua presença.',
+          )
+        },
+      },
+    )
   }
 
   async function handleRemoveTrip() {
@@ -204,12 +172,22 @@ export default function Trip() {
   }
 
   useEffect(() => {
-    fetchTrip()
-  }, [fetchTrip])
+    if (tripParams.participant) {
+      setVisibleModal(VisibleModalEnum.CONFIRM_TRIP)
+    }
+  }, [tripParams.participant])
 
-  if (isLoadingTrip) {
+  if (!tripDetails) {
     return <Loading />
   }
+
+  const { trip } = tripDetails
+
+  const endDay = dayjs(trip.ends_at).format('DD')
+  const startDay = dayjs(trip.starts_at).format('DD')
+  const startMonth = dayjs(trip.starts_at).format('MMM')
+
+  const when = `${startDay} a ${endDay} de ${startMonth}.`
 
   return (
     <View className="flex-1 px-5 pt-5">
@@ -222,28 +200,26 @@ export default function Trip() {
               className="flex-1 font-regular text-base text-zinc-100"
               numberOfLines={1}
             >
-              {tripDetails.destination}
+              {trip.destination}
             </Text>
 
-            <Text className="font-regular text-base text-zinc-100">
-              {tripDetails.when}
-            </Text>
+            <Text className="font-regular text-base text-zinc-100">{when}</Text>
           </View>
         </View>
 
         <TouchableOpacity
           activeOpacity={0.9}
           className="h-9 w-9 items-center justify-center rounded-lg bg-zinc-800"
-          onPress={() => setVisibleModal(VisibleModalEnum.UPDATE_TRIP)}
+          onPress={handleOpenUpdateTripModal}
         >
           <Settings2 color={colors.zinc[200]} size={20} />
         </TouchableOpacity>
       </View>
 
       {menuOption === 'activity' ? (
-        <Activities tripDetails={tripDetails} />
+        <Activities tripDetails={{ ...trip, when }} />
       ) : (
-        <Details tripId={tripDetails.id} />
+        <Details tripId={trip.id} />
       )}
 
       <View className="absolute -bottom-1 z-10 w-full justify-end self-center bg-zinc-950 pb-5">
@@ -342,18 +318,17 @@ export default function Trip() {
 
       <Modal
         title="Confirmar presença"
-        visible={visibleModal === VisibleModalEnum.CONFIRM_ATTENDANCE}
+        visible={visibleModal === VisibleModalEnum.CONFIRM_TRIP}
       >
         <Text className="mt-2 font-regular leading-6 text-zinc-400">
           Você foi convidado(a) para participar de uma viajem para{' '}
           <Text className="font-semibold text-zinc-100">
-            {tripDetails.destination}
+            {trip.destination}
           </Text>{' '}
           nas datas de{' '}
           <Text className="font-semibold text-zinc-100">
-            {dayjs(tripDetails.starts_at).date()} a{' '}
-            {dayjs(tripDetails.ends_at).date()} de{' '}
-            {dayjs(tripDetails.ends_at).format('MMMM')}
+            {dayjs(trip.starts_at).date()} a {dayjs(trip.ends_at).date()} de{' '}
+            {dayjs(trip.ends_at).format('MMMM')}
           </Text>
           .{'\n\n'}
           Para confirmar sua presença na viajem, preencha os dados abaixo:
@@ -381,10 +356,7 @@ export default function Trip() {
           </Input>
         </View>
 
-        <Button
-          isLoading={isConfirmingAttendance}
-          onPress={handleConfirmAttendance}
-        >
+        <Button isLoading={isConfirmingTrip} onPress={handleConfirmTrip}>
           <Button.Title>Confirmar</Button.Title>
         </Button>
       </Modal>

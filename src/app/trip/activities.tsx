@@ -1,20 +1,19 @@
 import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Calendar as CalendarIcon, Clock, Plus, Tag } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Keyboard, SectionList, Text, View } from 'react-native'
 import Animated, { SlideInLeft, SlideOutLeft } from 'react-native-reanimated'
 
-import { Activity, type ActivityProps } from '@/components/activity'
+import { Activity } from '@/components/activity'
 import { Button } from '@/components/button'
 import { Calendar } from '@/components/calendar'
 import { Input } from '@/components/input'
 import { Loading } from '@/components/loading'
 import { Modal } from '@/components/modal'
-import { createActivity, getActivitiesByTripId } from '@/server/activities'
+import { useCreateActivity, useTripActivities } from '@/server/activities'
+import { TripData } from '@/server/trips'
 import { colors } from '@/styles/colors'
-
-import type { TripDetails } from './[id]'
 
 enum VisibleModalEnum {
   NONE,
@@ -22,14 +21,7 @@ enum VisibleModalEnum {
   NEW_ACTIVITY,
 }
 
-interface TripActivity {
-  title: {
-    dayNumber: number
-    dayName: string
-    isPast: boolean
-  }
-  data: ActivityProps[]
-}
+type TripDetails = TripData & { when: string }
 
 interface ActivitiesProps {
   tripDetails: TripDetails
@@ -42,36 +34,10 @@ export function Activities({ tripDetails }: ActivitiesProps) {
   const [activityDate, setActivityDate] = useState('')
   const [activityHour, setActivityHour] = useState('')
 
-  const [isCreatingActivity, setIsCreatingActivity] = useState(false)
-  const [isLoadingActivities, setIsLoadingActivities] = useState(true)
+  const { data: tripActivities } = useTripActivities(tripDetails.id)
 
-  const [tripActivities, setTripActivities] = useState<TripActivity[]>([])
-
-  const fetchTripActivities = useCallback(async () => {
-    try {
-      const { activities } = await getActivitiesByTripId(tripDetails.id)
-
-      const activitiesToSectionList = activities.map((dayActivity) => ({
-        title: {
-          dayNumber: dayjs(dayActivity.date).date(),
-          dayName: dayjs(dayActivity.date).format('dddd').replace('-feira', ''),
-          isPast: dayjs(dayActivity.date).isAfter(dayjs()),
-        },
-        data: dayActivity.activities.map((activity) => ({
-          id: activity.id,
-          title: activity.title,
-          hour: dayjs(activity.occurs_at).format('hh[:]mm[h]'),
-          isBefore: dayjs(activity.occurs_at).isBefore(dayjs()),
-        })),
-      }))
-
-      setTripActivities(activitiesToSectionList)
-    } catch (error) {
-      console.warn(error)
-    } finally {
-      setIsLoadingActivities(false)
-    }
-  }, [tripDetails])
+  const { mutate: createActivity, isPending: isCreatingActivity } =
+    useCreateActivity()
 
   function resetActivityFields() {
     setActivityTitle('')
@@ -79,7 +45,7 @@ export function Activities({ tripDetails }: ActivitiesProps) {
     setActivityHour('')
   }
 
-  async function handleCreateTripActivity() {
+  function handleCreateTripActivity() {
     if (!activityTitle.trim() || !activityDate.trim() || !activityHour.trim()) {
       return Alert.alert(
         'Cadastrar atividade',
@@ -87,35 +53,43 @@ export function Activities({ tripDetails }: ActivitiesProps) {
       )
     }
 
-    setIsCreatingActivity(true)
-
-    try {
-      await createActivity({
+    createActivity(
+      {
         trip_id: tripDetails.id,
         title: activityTitle,
         occurs_at: dayjs(activityDate)
           .add(Number(activityHour), 'hours')
           .toString(),
-      })
-
-      await fetchTripActivities()
-
-      resetActivityFields()
-    } catch (error) {
-      console.warn(error)
-
-      Alert.alert(
-        'Cadastrar atividade',
-        'Ocorreu uma falha ao salvar a atividade.',
-      )
-    } finally {
-      setIsCreatingActivity(false)
-    }
+      },
+      {
+        onSuccess: () => {
+          resetActivityFields()
+        },
+        onError: () => {
+          Alert.alert(
+            'Cadastrar atividade',
+            'Ocorreu uma falha ao salvar a atividade.',
+          )
+        },
+      },
+    )
   }
 
-  useEffect(() => {
-    fetchTripActivities()
-  }, [fetchTripActivities])
+  const activitiesToSectionList = tripActivities?.activities.map(
+    (dayActivity) => ({
+      title: {
+        dayNumber: dayjs(dayActivity.date).date(),
+        dayName: dayjs(dayActivity.date).format('dddd').replace('-feira', ''),
+        isPast: dayjs(dayjs()).isAfter(dayActivity.date),
+      },
+      data: dayActivity.activities.map((activity) => ({
+        id: activity.id,
+        title: activity.title,
+        hour: dayjs(activity.occurs_at).format('hh[:]mm[h]'),
+        isBefore: dayjs(activity.occurs_at).isBefore(dayjs()),
+      })),
+    }),
+  )
 
   return (
     <Animated.View
@@ -137,11 +111,11 @@ export function Activities({ tripDetails }: ActivitiesProps) {
           </Button>
         </View>
 
-        {isLoadingActivities ? (
+        {!activitiesToSectionList ? (
           <Loading />
         ) : (
           <SectionList
-            sections={tripActivities}
+            sections={activitiesToSectionList}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <Activity data={item} />}
             renderSectionHeader={({ section }) => (

@@ -1,15 +1,15 @@
 import { Link2, Plus, Tag, UserCog } from 'lucide-react-native'
-import { useCallback, useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Alert, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 
 import { Button } from '@/components/button'
 import { Input } from '@/components/input'
 import { Modal } from '@/components/modal'
-import { Participant, ParticipantProps } from '@/components/participant'
-import { TripLink, TripLinkProps } from '@/components/trip-link'
-import { createLink, getLinksByTripId } from '@/server/links'
-import { getParticipantsByTripId } from '@/server/participants'
+import { Participant } from '@/components/participant'
+import { TripLink } from '@/components/trip-link'
+import { useCreateLink, useTripLinks } from '@/server/links'
+import { useTripParticipants } from '@/server/participants'
 import { colors } from '@/styles/colors'
 import { validateInput } from '@/utils/validate-input'
 
@@ -28,37 +28,16 @@ export function Details({ tripId }: DetailsProps) {
   const [linkTitle, setLinkTitle] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
 
-  const [isCreatingTripLink, setIsCreatingTripLink] = useState(false)
-
-  const [links, setLinks] = useState<TripLinkProps[]>([])
-  const [participants, setParticipants] = useState<ParticipantProps[]>([])
-
-  const fetchTripLinks = useCallback(async () => {
-    try {
-      const { links } = await getLinksByTripId(tripId)
-
-      setLinks(links)
-    } catch (error) {
-      console.warn(error)
-    }
-  }, [tripId])
-
-  const fetchTripParticipants = useCallback(async () => {
-    try {
-      const { participants } = await getParticipantsByTripId(tripId)
-
-      setParticipants(participants)
-    } catch (error) {
-      console.warn(error)
-    }
-  }, [tripId])
+  const { data: tripLinks } = useTripLinks(tripId)
+  const { data: tripParticipants } = useTripParticipants(tripId)
+  const { mutate: createLink, isPending: isCreatingTripLink } = useCreateLink()
 
   function resetTripLinkFields() {
     setLinkTitle('')
     setLinkUrl('')
   }
 
-  async function handleCreateTripLink() {
+  function handleCreateTripLink() {
     if (!linkTitle.trim()) {
       return Alert.alert('Cadastrar link', 'Informe um título para o link.')
     }
@@ -70,32 +49,25 @@ export function Details({ tripId }: DetailsProps) {
       )
     }
 
-    setIsCreatingTripLink(true)
-
-    try {
-      await createLink({
+    createLink(
+      {
         trip_id: tripId,
         url: linkUrl,
         title: linkTitle,
-      })
-
-      await fetchTripLinks()
-
-      resetTripLinkFields()
-    } catch (error) {
-      console.warn(error)
-    } finally {
-      setIsCreatingTripLink(false)
-    }
+      },
+      {
+        onSuccess: () => {
+          resetTripLinkFields()
+        },
+        onError: () => {
+          Alert.alert('Cadastrar link', 'Ocorreu uma falha ao salvar o link.')
+        },
+      },
+    )
   }
 
-  useEffect(() => {
-    fetchTripLinks()
-  }, [fetchTripLinks])
-
-  useEffect(() => {
-    fetchTripParticipants()
-  }, [fetchTripParticipants])
+  const links = tripLinks?.links ?? []
+  const participants = tripParticipants?.participants ?? []
 
   return (
     <Animated.ScrollView
