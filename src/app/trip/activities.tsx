@@ -120,44 +120,48 @@ export function Activities({ tripDetails }: ActivitiesProps) {
       exiting={SlideOutLeft.duration(400)}
       className="flex-1"
     >
-      <View className="mb-6 mt-5 w-full flex-row items-center">
-        <Text className="flex-1 font-semibold text-2xl text-zinc-50">
-          Atividades
-        </Text>
+      <View className="flex-1 gap-6 pt-5">
+        <View className="w-full flex-row items-center">
+          <Text className="flex-1 font-semibold text-2xl text-zinc-50">
+            Atividades
+          </Text>
 
-        <Button onPress={() => setVisibleModal(VisibleModalEnum.NEW_ACTIVITY)}>
-          <Button.Title>Nova atividade</Button.Title>
-          <Plus color={colors.lime[950]} size={20} />
-        </Button>
+          <Button
+            onPress={() => setVisibleModal(VisibleModalEnum.NEW_ACTIVITY)}
+          >
+            <Button.Title>Nova atividade</Button.Title>
+            <Plus color={colors.lime[950]} size={20} />
+          </Button>
+        </View>
+
+        {isLoadingActivities ? (
+          <Loading />
+        ) : (
+          <SectionList
+            sections={tripActivities}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <Activity data={item} />}
+            renderSectionHeader={({ section }) => (
+              <View className="w-full">
+                <Text className="pt-[1.375rem] font-semibold text-xl text-zinc-50">
+                  Dia {section.title.dayNumber}{' '}
+                  <Text className="font-regular text-xs capitalize text-zinc-500">
+                    {section.title.dayName}
+                  </Text>
+                </Text>
+
+                {section.data.length === 0 && (
+                  <Text className="mt-2.5 font-regular text-sm text-zinc-500">
+                    Nenhuma atividade cadastrada nessa data.
+                  </Text>
+                )}
+              </View>
+            )}
+            contentContainerClassName="pb-48 gap-2.5 -mt-3"
+            showsVerticalScrollIndicator={false}
+          />
+        )}
       </View>
-
-      {isLoadingActivities ? (
-        <Loading />
-      ) : (
-        <SectionList
-          sections={tripActivities}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <Activity data={item} />}
-          renderSectionHeader={({ section }) => (
-            <View className="w-full">
-              <Text className="py-2 font-semibold text-2xl text-zinc-50">
-                Dia {section.title.dayNumber}{' '}
-                <Text className="font-regular text-base capitalize text-zinc-500">
-                  {section.title.dayName}
-                </Text>
-              </Text>
-
-              {section.data.length === 0 && (
-                <Text className="mb-8 font-regular text-sm text-zinc-500">
-                  Nenhuma atividade cadastrada nessa data.
-                </Text>
-              )}
-            </View>
-          )}
-          contentContainerClassName="gap-3 pb-48"
-          showsVerticalScrollIndicator={false}
-        />
-      )}
 
       <Modal
         title="Cadastrar atividade"
@@ -165,7 +169,7 @@ export function Activities({ tripDetails }: ActivitiesProps) {
         visible={visibleModal === VisibleModalEnum.NEW_ACTIVITY}
         onClose={() => setVisibleModal(VisibleModalEnum.NONE)}
       >
-        <View className="mb-3 mt-4">
+        <View className="mb-3 mt-5">
           <Input variant="secondary">
             <Tag color={colors.zinc[400]} size={20} />
 
@@ -222,7 +226,7 @@ export function Activities({ tripDetails }: ActivitiesProps) {
         visible={visibleModal === VisibleModalEnum.CALENDAR}
         onClose={() => setVisibleModal(VisibleModalEnum.NONE)}
       >
-        <View className="mt-4 gap-4">
+        <View className="mt-5 gap-4">
           <Calendar
             maxDate={tripDetails.ends_at.toString()}
             minDate={tripDetails.starts_at.toString()}

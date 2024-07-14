@@ -11,6 +11,7 @@ import { Slot } from 'expo-router'
 import * as Splash from 'expo-splash-screen'
 import { useCallback, useEffect } from 'react'
 import { StatusBar, View } from 'react-native'
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 
 Splash.preventAutoHideAsync()
 
@@ -36,14 +37,18 @@ export default function Layout() {
   }
 
   return (
-    <View className="flex-1 bg-zinc-950">
-      <StatusBar
-        barStyle="light-content"
-        backgroundColor="transparent"
-        translucent
-      />
+    <SafeAreaProvider>
+      <View className="flex-1 bg-zinc-950">
+        <SafeAreaView style={{ flex: 1 }}>
+          <StatusBar
+            barStyle="light-content"
+            backgroundColor="transparent"
+            translucent
+          />
 
-      <Slot />
-    </View>
+          <Slot />
+        </SafeAreaView>
+      </View>
+    </SafeAreaProvider>
   )
 }

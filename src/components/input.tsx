@@ -9,7 +9,7 @@ import {
 
 import { colors } from '@/styles/colors'
 
-type Variant = 'primary' | 'secondary' | 'tertiary'
+type Variant = 'primary' | 'secondary'
 
 interface InputProps extends ViewProps {
   variant?: Variant
@@ -24,7 +24,6 @@ function Input({ variant = 'primary', className, ...props }: InputProps) {
           'max-h-14 min-h-14 rounded-lg border border-zinc-800 px-4':
             variant !== 'primary',
           'bg-zinc-950': variant === 'secondary',
-          'bg-zinc-900': variant === 'tertiary',
         },
         className,
       )}

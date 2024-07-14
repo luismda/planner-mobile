@@ -19,8 +19,8 @@ export function Activity({ data }: Props) {
   return (
     <View
       className={clsx(
-        'w-full flex-row items-center gap-3 rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-3',
-        { 'opacity-50': data.isBefore },
+        'h-10 w-full flex-row items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4',
+        { 'opacity-60': data.isBefore },
       )}
     >
       {data.isBefore ? (

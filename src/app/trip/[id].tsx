@@ -68,18 +68,13 @@ export default function Trip() {
     try {
       const { trip } = await getTripDetails(tripParams.id)
 
-      const destination =
-        trip.destination.length > 14
-          ? trip.destination.substring(0, 14).trimEnd().concat('...')
-          : trip.destination
-
       const endDay = dayjs(trip.ends_at).format('DD')
       const startDay = dayjs(trip.starts_at).format('DD')
       const startMonth = dayjs(trip.starts_at).format('MMM')
 
       setTripDetails({
         ...trip,
-        when: `${destination} de ${startDay} a ${endDay} de ${startMonth}.`,
+        when: `${startDay} a ${endDay} de ${startMonth}.`,
       })
 
       setDestination(trip.destination)
@@ -217,19 +212,33 @@ export default function Trip() {
   }
 
   return (
-    <View className="flex-1 px-5 pt-16">
-      <Input variant="tertiary">
-        <MapPin color={colors.zinc[400]} size={20} />
-        <Input.Field value={tripDetails.when} readOnly />
+    <View className="flex-1 px-5 pt-5">
+      <View className="h-16 flex-row items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-900 px-4">
+        <View className="flex-1 flex-row items-center gap-2">
+          <MapPin color={colors.zinc[400]} size={20} />
+
+          <View className="flex-1 flex-row items-center gap-3">
+            <Text
+              className="flex-1 font-regular text-base text-zinc-100"
+              numberOfLines={1}
+            >
+              {tripDetails.destination}
+            </Text>
+
+            <Text className="font-regular text-base text-zinc-100">
+              {tripDetails.when}
+            </Text>
+          </View>
+        </View>
 
         <TouchableOpacity
           activeOpacity={0.9}
-          className="h-9 w-9 items-center justify-center rounded bg-zinc-800"
+          className="h-9 w-9 items-center justify-center rounded-lg bg-zinc-800"
           onPress={() => setVisibleModal(VisibleModalEnum.UPDATE_TRIP)}
         >
-          <Settings2 color={colors.zinc[400]} size={20} />
+          <Settings2 color={colors.zinc[200]} size={20} />
         </TouchableOpacity>
-      </Input>
+      </View>
 
       {menuOption === 'activity' ? (
         <Activities tripDetails={tripDetails} />
@@ -238,7 +247,7 @@ export default function Trip() {
       )}
 
       <View className="absolute -bottom-1 z-10 w-full justify-end self-center bg-zinc-950 pb-5">
-        <View className="w-full flex-row gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-4">
+        <View className="w-full flex-row gap-2 rounded-lg border border-zinc-800 bg-zinc-900 p-3">
           <Button
             className="flex-1"
             variant={menuOption === 'activity' ? 'primary' : 'secondary'}
@@ -277,7 +286,7 @@ export default function Trip() {
         visible={visibleModal === VisibleModalEnum.UPDATE_TRIP}
         onClose={() => setVisibleModal(VisibleModalEnum.NONE)}
       >
-        <View className="my-4 gap-3">
+        <View className="mt-5 gap-3">
           <View className="gap-2">
             <Input variant="secondary">
               <MapPin color={colors.zinc[400]} size={20} />

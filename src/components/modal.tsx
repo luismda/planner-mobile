@@ -11,6 +11,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { colors } from '@/styles/colors'
 
@@ -28,6 +29,7 @@ export function Modal({
   children,
   ...rest
 }: Props) {
+  const insets = useSafeAreaInsets()
   const dimensions = useWindowDimensions()
 
   const [isVisible, setIsVisible] = useState(false)
@@ -112,10 +114,13 @@ export function Modal({
                       duration: 500,
                     }}
                   >
-                    <View className="border-t border-zinc-700 bg-zinc-900 px-6 pb-10 pt-5">
+                    <View
+                      style={{ paddingBottom: 20 + insets.bottom }}
+                      className="border-t border-zinc-700 bg-zinc-900 px-6 pt-5"
+                    >
                       <ScrollView showsVerticalScrollIndicator={false}>
                         <View className="flex-row items-center justify-between pt-5">
-                          <Text className="font-medium text-xl text-white">
+                          <Text className="font-semibold text-xl text-white">
                             {title}
                           </Text>
 
@@ -130,7 +135,7 @@ export function Modal({
                         </View>
 
                         {subtitle.trim().length > 0 && (
-                          <Text className="my-2 font-regular leading-6 text-zinc-400">
+                          <Text className="my-2 font-regular text-base leading-6 text-zinc-400">
                             {subtitle}
                           </Text>
                         )}

@@ -1,6 +1,6 @@
-import { Link2, Plus, Tag } from 'lucide-react-native'
+import { Link2, Plus, Tag, UserCog } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
-import { Alert, FlatList, Text, View } from 'react-native'
+import { Alert, Text, View } from 'react-native'
 import Animated, { SlideInRight, SlideOutRight } from 'react-native-reanimated'
 
 import { Button } from '@/components/button'
@@ -98,28 +98,26 @@ export function Details({ tripId }: DetailsProps) {
   }, [fetchTripParticipants])
 
   return (
-    <Animated.View
+    <Animated.ScrollView
+      showsVerticalScrollIndicator={false}
       entering={SlideInRight.duration(400)}
       exiting={SlideOutRight.duration(400)}
-      className="flex-1 pt-5"
+      contentContainerClassName="flex-1 gap-5 pt-5 pb-48"
     >
-      <Text className="mb-2 font-semibold text-2xl text-zinc-50">
-        Links importantes
-      </Text>
+      <View className="gap-6">
+        <Text className="font-semibold text-xl text-zinc-50">
+          Links importantes
+        </Text>
 
-      <View className="flex-1">
-        <FlatList
-          data={links}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerClassName="gap-4 pb-44"
-          renderItem={({ item }) => <TripLink data={item} />}
-          ListEmptyComponent={
-            <Text className="mb-6 mt-2 font-regular text-base text-zinc-400">
+        <View className="gap-5">
+          {links.length > 0 ? (
+            links.map((link) => <TripLink key={link.id} data={link} />)
+          ) : (
+            <Text className="font-regular text-sm text-zinc-500">
               Nenhum link adicionado.
             </Text>
-          }
-        />
+          )}
+        </View>
 
         <Button
           variant="secondary"
@@ -130,18 +128,21 @@ export function Details({ tripId }: DetailsProps) {
         </Button>
       </View>
 
-      <View className="mt-6 flex-1 border-t border-zinc-800">
-        <Text className="my-6 font-semibold text-2xl text-zinc-50">
-          Convidados
-        </Text>
+      <View className="h-px bg-zinc-800" />
 
-        <FlatList
-          data={participants}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerClassName="gap-4 pb-44"
-          renderItem={({ item }) => <Participant data={item} />}
-        />
+      <View className="gap-6">
+        <Text className="font-semibold text-xl text-zinc-50">Convidados</Text>
+
+        <View className="gap-5">
+          {participants.map((participant) => (
+            <Participant key={participant.id} data={participant} />
+          ))}
+        </View>
+
+        <Button variant="secondary">
+          <UserCog color={colors.zinc[200]} size={20} />
+          <Button.Title>Gerenciar convidados</Button.Title>
+        </Button>
       </View>
 
       <Modal
@@ -150,7 +151,7 @@ export function Details({ tripId }: DetailsProps) {
         visible={visibleModal === VisibleModalEnum.NEW_LINK}
         onClose={() => setVisibleModal(VisibleModalEnum.NONE)}
       >
-        <View className="mb-3 gap-2">
+        <View className="mb-3 mt-5 gap-2">
           <Input variant="secondary">
             <Tag color={colors.zinc[400]} size={20} />
 
@@ -177,6 +178,6 @@ export function Details({ tripId }: DetailsProps) {
           <Button.Title>Salvar link</Button.Title>
         </Button>
       </Modal>
-    </Animated.View>
+    </Animated.ScrollView>
   )
 }

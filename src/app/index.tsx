@@ -203,7 +203,7 @@ export default function Index() {
         />
 
         <Text className="mt-3 text-center font-regular text-lg text-zinc-400">
-          Convide seus amigos e planeje sua{'\n'}próxima viajem
+          Convide seus amigos e planeje sua{'\n'}próxima viajem!
         </Text>
       </Animated.View>
 
@@ -239,7 +239,7 @@ export default function Index() {
 
         {formStep === FormStepEnum.ADD_EMAILS && (
           <Animated.View
-            className="gap-2"
+            className="gap-3"
             entering={FadeIn.delay(100)}
             exiting={FadeOut.duration(100)}
           >
@@ -316,7 +316,7 @@ export default function Index() {
         visible={visibleModal === VisibleModalEnum.CALENDAR}
         onClose={() => setVisibleModal(VisibleModalEnum.NONE)}
       >
-        <View className="mt-4 gap-4">
+        <View className="mt-5 gap-4">
           <Calendar
             minDate={dayjs().toISOString()}
             markedDates={selectedDates.dates}
@@ -335,7 +335,7 @@ export default function Index() {
         visible={visibleModal === VisibleModalEnum.GUESTS}
         onClose={() => setVisibleModal(VisibleModalEnum.NONE)}
       >
-        <View className="my-2 flex-wrap items-start gap-2 border-b border-zinc-800 py-5">
+        <View className="flex-wrap items-start gap-2 border-b border-zinc-800 py-5">
           {emailsToInvite.length > 0 ? (
             emailsToInvite.map((email) => {
               return (
@@ -347,13 +347,13 @@ export default function Index() {
               )
             })
           ) : (
-            <Text className="font-regular text-base text-zinc-600">
+            <Text className="font-regular text-base text-zinc-400">
               Nenhum e-mail adicionado.
             </Text>
           )}
         </View>
 
-        <View className="mt-4 gap-4">
+        <View className="mt-5 gap-3">
           <Input variant="secondary">
             <AtSign color={colors.zinc[400]} size={20} />
 

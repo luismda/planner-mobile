@@ -17,12 +17,12 @@ type Props = {
 export function Participant({ data }: Props) {
   return (
     <View className="w-full flex-row items-center">
-      <View className="flex-1">
-        <Text className="font-semibold text-base text-zinc-100">
+      <View className="flex-1 gap-1.5">
+        <Text className="font-medium text-base text-zinc-100">
           {data.name ?? 'Pendente'}
         </Text>
 
-        <Text className="text-sm text-zinc-400">{data.email}</Text>
+        <Text className="font-regular text-sm text-zinc-400">{data.email}</Text>
       </View>
 
       {data.is_confirmed ? (
