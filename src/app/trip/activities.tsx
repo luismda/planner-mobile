@@ -1,3 +1,4 @@
+import clsx from 'clsx'
 import dayjs from 'dayjs'
 import { Calendar as CalendarIcon, Clock, Plus, Tag } from 'lucide-react-native'
 import { useCallback, useEffect, useState } from 'react'
@@ -25,6 +26,7 @@ interface TripActivity {
   title: {
     dayNumber: number
     dayName: string
+    isPast: boolean
   }
   data: ActivityProps[]
 }
@@ -53,6 +55,7 @@ export function Activities({ tripDetails }: ActivitiesProps) {
         title: {
           dayNumber: dayjs(dayActivity.date).date(),
           dayName: dayjs(dayActivity.date).format('dddd').replace('-feira', ''),
+          isPast: dayjs(dayActivity.date).isAfter(dayjs()),
         },
         data: dayActivity.activities.map((activity) => ({
           id: activity.id,
@@ -143,7 +146,12 @@ export function Activities({ tripDetails }: ActivitiesProps) {
             renderItem={({ item }) => <Activity data={item} />}
             renderSectionHeader={({ section }) => (
               <View className="w-full">
-                <Text className="pt-[1.375rem] font-semibold text-xl text-zinc-50">
+                <Text
+                  className={clsx(
+                    'pt-[1.375rem] font-semibold text-xl text-zinc-50',
+                    { 'opacity-60': section.title.isPast },
+                  )}
+                >
                   Dia {section.title.dayNumber}{' '}
                   <Text className="font-regular text-xs capitalize text-zinc-500">
                     {section.title.dayName}
